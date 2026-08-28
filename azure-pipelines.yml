@@ -1,0 +1,56 @@
+trigger:
+  - main
+
+pool: asr
+
+stages:
+  - stage:
+    jobs:
+      - job: install_terraform
+        steps:
+
+        - task: TerraformInstaller@1
+          inputs:
+            terraformVersion: 'latest'
+
+        - task: TerraformTask@5
+          inputs:
+            provider: 'azurerm'
+            command: 'init'
+            workingDirectory: '$(System.DefaultWorkingDirectory)/env/dev'
+            backendServiceArm: 'svc_test'
+            backendAzureRmResourceGroupName: 'back-state'
+            backendAzureRmStorageAccountName: 'statestorage88888'
+            backendAzureRmContainerName: 'statecontainer'
+            backendAzureRmKey: 'dev_terraform.tfstate'
+
+        - task: DownloadSecureFile@1
+          name: tfvars
+          inputs:
+            secureFile: 'terraform.tfvars'
+
+        - task: Bash@3
+          inputs:
+            targetType: 'inline'
+            script: |
+              cp "$(tfvars.secureFilePath)" \
+              "$(System.DefaultWorkingDirectory)/env/dev/terraform.tfvars"
+
+        - task: TerraformTask@5
+          inputs:
+            provider: 'azurerm'
+            command: 'plan'
+            workingDirectory: '$(System.DefaultWorkingDirectory)/env/dev'
+            environmentServiceNameAzureRM: 'svc_test'
+          env:
+            TF_VAR_vm_credentials: |
+              {
+                "vm1": {
+                  "username": "$(VM1_USERNAME)",
+                  "password": "$(VM1_PASSWORD)"
+                },
+                "vm2": {
+                  "username": "$(VM2_USERNAME)",
+                  "password": "$(VM2_PASSWORD)"
+                }
+              }

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+apt-get update -y
+
+apt-get install -y nginx
+
+systemctl enable nginx
+systemctl start nginx
+
+echo "<h1>Hello from Anup's Azure VM</h1>" > /var/www/html/index.html
